@@ -156,11 +156,9 @@
         </div>
 
         <!-- Segmen & Level Filter Row -->
-        <div class="flex items-center gap-2">
-          <select id="segmenFilterSelect" onchange="renderAccountList()" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-djpb-500">
+        <div class="flex items-center gap-2 w-full">
+          <select id="segmenFilterSelect" onchange="renderAccountList()" class="flex-1 min-w-0 truncate bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-djpb-500">
             <option value="ALL">Semua Segmen Akun (1 - 8)</option>
-            <option value="KEP291_UPD">★ Pemutakhiran KEP-291/PB/2022 (Baru/Ubah)</option>
-            <option value="KEP291_NONAKTIF">⛔ Akun Dinonaktifkan (KEP-291/PB/2022)</option>
             <option value="DIKTUM3">★ Akun Baru Diktum Ketiga (TA 2022)</option>
             <option value="1">1 - Aset (Neraca)</option>
             <option value="2">2 - Kewajiban (Neraca)</option>
@@ -172,7 +170,7 @@
             <option value="8">8 - Transitoris / Non-Anggaran (PFK)</option>
           </select>
 
-          <select id="digitFilterSelect" onchange="renderAccountList()" class="w-28 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-djpb-500">
+          <select id="digitFilterSelect" onchange="renderAccountList()" class="shrink-0 w-28 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-djpb-500">
             <option value="ALL">Semua Digit</option>
             <option value="6">6 Digit (Detail)</option>
             <option value="INDUK">1-5 Digit (Induk)</option>
