@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>BAS Online - KPPN Luwuk</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            djpb: {
+              50: '#f0f5fa',
+              100: '#e1ebf5',
+              200: '#c3d7eb',
+              500: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1B365D',
+              900: '#0f2342',
+            },
+            gold: {
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+      font-family: 'Inter', sans-serif;
+      background-color: #e2e8f0;
+      color: #0f172a;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .app-shell-mobile {
+      width: 100%;
+      max-width: 480px;
+      height: var(--app-height, 100%);
+      max-height: 100%;
+      margin: 0 auto;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+      overflow: hidden;
+    }
+    .app-shell-full {
+      width: 100%;
+      max-width: 1024px;
+      height: var(--app-height, 100%);
+      max-height: 100%;
+      margin: 0 auto;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.15);
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="fixed inset-0 flex flex-col justify-start overflow-hidden">
+
+  <!-- MAIN APP CONTAINER -->
+  <div id="appShell" class="app-shell-mobile transition-all duration-300">
+
+    <!-- App Header -->
+    <header class="shrink-0 bg-gradient-to-r from-djpb-900 via-djpb-800 to-blue-900 text-white px-4 pt-3.5 pb-3.5 shadow-md relative z-20">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-gold-500 flex items-center justify-center text-djpb-900 font-black shadow">
+            <i class="fa-solid fa-landmark"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-extrabold text-base tracking-tight">BAS Online</span>
+              <span class="text-[10px] bg-white/15 px-1.5 py-0.5 rounded font-semibold text-gold-400">DJPb</span>
+              <span id="dbCountBadge" class="text-[10px] bg-emerald-500/20 border border-emerald-400/30 px-1.5 py-0.5 rounded font-mono text-emerald-300">Memuat...</span>
+            </div>
+            <p id="headerSubtitle" class="text-[11px] text-blue-200">@KPPN Luwuk • KEP-331/PB/2021 & KEP-291/PB/2022</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button onclick="toggleShellWidth()" id="layoutToggleBtn" title="Ubah Lebar Tampilan (HP / Lebar)" class="hidden sm:flex w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 items-center justify-center text-white transition">
+            <i class="fa-solid fa-expand text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- =============================================================== -->
+    <!-- APP SCREEN 1: DAFTAR AKUN                                       -->
+    <!-- =============================================================== -->
+    <div id="appScreen-akun" class="flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div class="shrink-0 bg-white p-3.5 border-b border-slate-200 space-y-2.5 shadow-xs z-10">
+        <!-- Basis Toggle -->
+        <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+          <button onclick="setBasisFilter('KAS')" id="basisBtn-KAS" class="py-1.5 px-2 rounded-lg text-xs font-bold bg-djpb-800 text-white shadow-xs transition">
+            Akun Kas
+          </button>
+          <button onclick="setBasisFilter('AKRUAL')" id="basisBtn-AKRUAL" class="py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+            Akun Akrual
+          </button>
+          <button onclick="setBasisFilter('MASTER6')" id="basisBtn-MASTER6" class="py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition">
+            Sandingan 6D
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input
+            type="text"
+            id="basSearchInput"
+            oninput="renderAccountList()"
+            placeholder="Ketik Kode (mis. 521111) atau Uraian Akun..."
+            class="w-full pl-9 pr-8 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-djpb-500 focus:bg-white transition"
+          />
+          <button id="clearSearchBtn" onclick="clearAccountSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Segmen & Level Filter Row -->
+        <div class="flex items-center gap-2">
+          <select id="segmenFilterSelect" onchange="renderAccountList()" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-djpb-500">
+            <option value="ALL">Semua Segmen Akun (1 - 8)</option>
+            <option value="KEP291_UPD">★ Pemutakhiran KEP-291/PB/2022 (Baru/Ubah)</option>
+            <option value="KEP291_NONAKTIF">⛔ Akun Dinonaktifkan (KEP-291/PB/2022)</option>
+            <option value="DIKTUM3">★ Akun Baru Diktum Ketiga (TA 2022)</option>
+            <option value="1">1 - Aset (Neraca)</option>
+            <option value="2">2 - Kewajiban (Neraca)</option>
+            <option value="3">3 - Ekuitas (Neraca)</option>
+            <option value="4">4 - Pendapatan Negara (LRA / LO)</option>
+            <option value="5">5 - Belanja / Beban Negara</option>
+            <option value="6">6 - Transfer ke Daerah & Dana Desa</option>
+            <option value="7">7 - Pembiayaan (Khusus Kas)</option>
+            <option value="8">8 - Transitoris / Non-Anggaran (PFK)</option>
+          </select>
+
+          <select id="digitFilterSelect" onchange="renderAccountList()" class="w-28 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 text-xs text-slate-700 font-medium focus:outline-none focus:ring-1 focus:ring-djpb-500">
+            <option value="ALL">Semua Digit</option>
+            <option value="6">6 Digit (Detail)</option>
+            <option value="INDUK">1-5 Digit (Induk)</option>
+          </select>
+        </div>
+
+        <!-- Result Counter Bar -->
+        <div class="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+          <span id="searchResultCountText">Menghubungkan ke Supabase...</span>
+          <span id="activeBasisLabel" class="font-semibold text-djpb-800">Lampiran I & II (Kas)</span>
+        </div>
+      </div>
+
+      <!-- Scrollable Account List -->
+      <div id="accountListContainer" class="flex-1 overflow-y-auto p-3 space-y-2">
+        <div class="bg-white rounded-2xl p-8 text-center text-slate-500 text-xs sm:text-sm border border-slate-200 my-4 space-y-2">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-djpb-800"></i>
+          <div class="font-bold text-slate-700">Memuat Data dari Supabase Database...</div>
+          <p class="text-[11px] text-slate-400">Sinkronisasi ribuan akun KEP-331/PB/2021</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- =============================================================== -->
+    <!-- APP SCREEN 2: BOOKMARK                                          -->
+    <!-- =============================================================== -->
+    <div id="appScreen-bookmark" class="hidden flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div class="shrink-0 bg-white p-3.5 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+            <i class="fa-solid fa-star text-amber-500"></i>
+            Daftar Bookmark Akun
+          </h3>
+          <p class="text-[11px] text-slate-500">Akun pilihan yang sering digunakan dalam transaksi Satker</p>
+        </div>
+        <button onclick="exportBookmarksCSV()" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1 transition">
+          <i class="fa-solid fa-download"></i> Unduh CSV
+        </button>
+      </div>
+      <div id="bookmarkListContainer" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
+    </div>
+
+    <!-- =============================================================== -->
+    <!-- APP SCREEN 3: TANYA JAWAB (FAQ)                                 -->
+    <!-- =============================================================== -->
+    <div id="appScreen-faq" class="hidden flex-1 min-h-0 flex flex-col overflow-hidden">
+      <div class="shrink-0 bg-white p-3.5 border-b border-slate-200 space-y-2.5">
+        <div class="flex flex-col gap-2">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-question text-djpb-700"></i>
+              <span>Tanya Jawab & Studi Kasus BAS</span>
+            </h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">Solusi pemilihan akun belanja, modal, persediaan & pajak</p>
+          </div>
+          <select id="faqCategorySelect" onchange="renderFaqList()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-djpb-500">
+            <option value="ALL">Semua Topik</option>
+          </select>
+        </div>
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          <input
+            type="text"
+            id="faqSearchInput"
+            oninput="renderFaqList()"
+            placeholder="Cari permasalahan (misal: konsumsi rapat, ekstrakomptabel, sewa)..."
+            class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-djpb-500 focus:bg-white"
+          />
+        </div>
+      </div>
+      <div id="faqListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5"></div>
+    </div>
+
+    <!-- =============================================================== -->
+    <!-- APP SCREEN 4: NARASI BAS                                        -->
+    <!-- =============================================================== -->
+    <div id="appScreen-narasi" class="hidden flex-1 min-h-0 overflow-y-auto p-3.5 space-y-3.5">
+      <!-- Card 1: Dasar Hukum -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-2.5">
+        <div class="flex items-center gap-2 text-djpb-800 font-bold text-sm">
+          <i class="fa-solid fa-scale-balanced"></i>
+          <span>Dasar Hukum & Ketentuan KEP-331/PB/2021 & KEP-291/PB/2022</span>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          <strong>1. KEP-331/PB/2021:</strong> Ditetapkan pada tanggal 29 Desember 2021 oleh Direktur Jenderal Perbendaharaan (Hadiyanto) untuk melaksanakan Pasal 3 ayat (2) PMK Nomor 214/PMK.05/2013 tentang Bagan Akun Standar, sekaligus mencabut KEP-211/PB/2018 dan KEP-205/PB/2021.
+        </p>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          <strong>2. KEP-291/PB/2022 (Pemutakhiran BAS):</strong> Ditetapkan pada tanggal 19 Desember 2022 oleh Direktur Jenderal Perbendaharaan (Astera Primanto Bhakti) tentang Pemutakhiran Kodefikasi Segmen Akun pada Bagan Akun Standar. Ketentuan KEP-331/PB/2021 dinyatakan tetap berlaku sepanjang tidak bertentangan dengan KEP-291/PB/2022.
+        </p>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <div class="bg-blue-50/70 p-2.5 rounded-xl border border-blue-100">
+            <div class="text-[11px] font-bold text-djpb-800">Lampiran I & II</div>
+            <div class="text-[11px] text-slate-600">Segmen Akun Kas & Penjelasan Uraian Akun Kas (LRA, Neraca Kas, Transitoris).</div>
+          </div>
+          <div class="bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-100">
+            <div class="text-[11px] font-bold text-indigo-900">Lampiran III & IV</div>
+            <div class="text-[11px] text-slate-600">Segmen Akun Akrual & Penjelasan Uraian Akrual (LO, Neraca Akrual, Beban).</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Struktur 6 Digit -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-2.5">
+        <div class="flex items-center gap-2 text-djpb-800 font-bold text-sm">
+          <i class="fa-solid fa-sitemap"></i>
+          <span>Struktur Hirarki 6 Digit Segmen Akun BAS</span>
+        </div>
+        <div class="space-y-1.5 text-xs">
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/70">
+            <span class="font-mono font-bold text-djpb-800">X (1 Digit)</span>
+            <span class="text-slate-700 font-medium">Akun Utama (Contoh: <code class="font-mono">5</code> Belanja/Beban Negara)</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/70">
+            <span class="font-mono font-bold text-djpb-800">XX (2 Digit)</span>
+            <span class="text-slate-700 font-medium">Kelompok Akun (Contoh: <code class="font-mono">52</code> Belanja Barang & Jasa)</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/70">
+            <span class="font-mono font-bold text-djpb-800">XXX (3 Digit)</span>
+            <span class="text-slate-700 font-medium">Jenis Akun (Contoh: <code class="font-mono">521</code> Belanja Barang)</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/70">
+            <span class="font-mono font-bold text-djpb-800">XXXX (4 Digit)</span>
+            <span class="text-slate-700 font-medium">Objek Akun (Contoh: <code class="font-mono">5211</code> Belanja Barang Operasional)</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200/70">
+            <span class="font-mono font-bold text-djpb-800">XXXXX (5 Digit)</span>
+            <span class="text-slate-700 font-medium">Rincian Objek (Contoh: <code class="font-mono">52111</code> Belanja Barang Operasional)</span>
+          </div>
+          <div class="flex items-center justify-between p-2 rounded-lg bg-amber-50 border border-amber-200">
+            <span class="font-mono font-bold text-amber-900">XXXXXX (6 Digit)</span>
+            <span class="text-amber-900 font-semibold">Sub Rincian Objek / Operasional (Contoh: <code class="font-mono">521111</code>)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Pedoman Kapitalisasi vs Ekstrakomptabel -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-2">
+        <div class="flex items-center gap-2 text-djpb-800 font-bold text-sm">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <span>Pedoman Nilai Kapitalisasi vs Ekstrakomptabel</span>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed">
+          Sesuai Diktum Ketiga KEP-331/PB/2021 dan PMK Penatausahaan BMN, pengadaan aset tetap yang nilainya <strong>di bawah batas minimum kapitalisasi</strong> dicatat menggunakan akun <strong>Belanja Barang Ekstrakomptabel</strong>:
+        </p>
+        <ul class="text-xs text-slate-600 space-y-1 pl-4 list-disc">
+          <li><strong>Peralatan & Mesin (&lt; Rp1.000.000 per unit):</strong> Gunakan <code class="font-mono font-bold text-djpb-800">521252</code> (Satker Reguler) atau <code class="font-mono font-bold text-djpb-800">525162</code> (Satker BLU).</li>
+          <li><strong>Gedung & Bangunan (&lt; Rp25.000.000):</strong> Gunakan <code class="font-mono font-bold text-djpb-800">521253</code> (Satker Reguler) atau <code class="font-mono font-bold text-djpb-800">525163</code> (Satker BLU).</li>
+          <li><strong>Aset Tetap Lainnya (Hewan, Ikan, Tanaman):</strong> Gunakan <code class="font-mono font-bold text-djpb-800">521254</code> (Reguler) atau <code class="font-mono font-bold text-djpb-800">525164</code> (BLU).</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- =============================================================== -->
+    <!-- BOTTOM NAVIGATION BAR                                           -->
+    <!-- =============================================================== -->
+    <nav class="shrink-0 bg-white border-t border-slate-200 px-2 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] grid grid-cols-4 gap-1 select-none z-20">
+      <button onclick="switchAppScreen('akun')" id="navBtn-akun" class="app-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-djpb-800 font-bold bg-blue-50/80 transition">
+        <i class="fa-solid fa-list-ul text-base mb-0.5"></i>
+        <span class="text-[10px]">Daftar Akun</span>
+      </button>
+      <button onclick="switchAppScreen('bookmark')" id="navBtn-bookmark" class="app-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition relative">
+        <i class="fa-solid fa-star text-base mb-0.5"></i>
+        <span class="text-[10px]">Bookmark</span>
+        <span id="navBookmarkBadge" class="hidden absolute top-0.5 right-5 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">0</span>
+      </button>
+      <button onclick="switchAppScreen('faq')" id="navBtn-faq" class="app-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition">
+        <i class="fa-solid fa-comments text-base mb-0.5"></i>
+        <span class="text-[10px]">Tanya Jawab</span>
+      </button>
+      <button onclick="switchAppScreen('narasi')" id="navBtn-narasi" class="app-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition">
+        <i class="fa-solid fa-book-open text-base mb-0.5"></i>
+        <span class="text-[10px]">Narasi BAS</span>
+      </button>
+    </nav>
+
+    <!-- =============================================================== -->
+    <!-- MODAL DRAWER: RINCIAN AKUN                                      -->
+    <!-- =============================================================== -->
+    <div id="accountDetailModal" class="hidden absolute inset-0 bg-slate-900/60 backdrop-blur-xs z-30 flex flex-col justify-end">
+      <div class="bg-white rounded-t-3xl max-h-[88%] flex flex-col shadow-2xl overflow-hidden">
+        <div class="bg-djpb-900 text-white px-5 py-4 flex items-start justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="detailKodeBadge" class="px-2.5 py-0.5 rounded-lg bg-gold-500 text-slate-950 font-mono font-extrabold text-sm">521111</span>
+              <span id="detailBasisBadge" class="px-2 py-0.5 rounded bg-white/15 text-blue-100 text-[11px] font-semibold">Basis Kas</span>
+              <span id="detailDigitBadge" class="px-2 py-0.5 rounded bg-white/10 text-slate-300 text-[10px]">6 Digit</span>
+            </div>
+            <h4 id="detailUraianTitle" class="font-bold text-sm sm:text-base mt-2 leading-snug">Belanja Keperluan Perkantoran</h4>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button id="detailBookmarkBtn" onclick="toggleBookmarkFromModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition" title="Simpan ke Bookmark">
+              <i class="fa-regular fa-star text-base"></i>
+            </button>
+            <button onclick="closeAccountDetailModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+              <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm">
+          <div id="detailHierarchyBox" class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Hirarki Segmen Akun:</div>
+            <div id="detailHierarchyList" class="space-y-1 text-xs text-slate-700 font-medium"></div>
+          </div>
+          <div class="space-y-1.5">
+            <div class="font-bold text-slate-800 flex items-center gap-1.5 text-xs uppercase tracking-wider">
+              <i class="fa-solid fa-file-lines text-djpb-700"></i>
+              <span>Penjelasan Penggunaan Akun:</span>
+            </div>
+            <div id="detailPenjelasanText" class="bg-blue-50/60 border border-blue-200/80 rounded-xl p-3.5 text-slate-800 leading-relaxed whitespace-pre-line"></div>
+          </div>
+          <div id="detailSandinganBox" class="bg-indigo-50/60 border border-indigo-200/80 rounded-xl p-3.5 space-y-2">
+            <div class="font-bold text-indigo-950 flex items-center gap-1.5 text-xs">
+              <i class="fa-solid fa-code-compare text-indigo-600"></i>
+              <span>Padanan Pencatatan Kas (LRA) vs Akrual (LO/Neraca):</span>
+            </div>
+            <div id="detailSandinganContent" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"></div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 px-5 py-3 border-t border-slate-200 flex items-center gap-2.5">
+          <button onclick="copyCurrentAccountDetail()" class="flex-1 py-2.5 px-4 rounded-xl bg-djpb-800 hover:bg-djpb-900 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-xs transition">
+            <i class="fa-regular fa-copy"></i>
+            <span>Salin Kode & Penjelasan</span>
+          </button>
+          <button onclick="shareCurrentAccountDetail()" class="py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-xs transition">
+            <i class="fa-solid fa-share-nodes"></i>
+            <span>Bagikan</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-16 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    // ==========================================
+    // KONFIGURASI SUPABASE (Ganti dengan kredensial Anda)
+    // ==========================================
+    const SUPABASE_URL = 'https://iwaztnioxolvkjjmgjml.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3YXp0bmlveG9sdmtqam1nam1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxOTEyNjksImV4cCI6MjEwODc2NzI2OX0.I77yCR8RUBKgUHy4ESky8HezyLby6v26PH0U3YPIJvA';
+    
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+    const FALLBACK_FAQS = [
+      {
+        id: 'FAQ-01',
+        kategori: 'Belanja Barang',
+        tanya: 'Apa perbedaan penggunaan akun 521111 (Belanja Keperluan Perkantoran), 521211 (Belanja Bahan), dan 521811 (Belanja Barang Persediaan Konsumsi)?',
+        jawab: '1. Akun 521111 digunakan untuk membiayai keperluan sehari-hari perkantoran yang menunjang operasional rutin kantor dan habis pakai tanpa masuk gudang persediaan.\n2. Akun 521211 (Belanja Bahan) digunakan untuk biaya bahan pendukung kegiatan non-operasional yang terkait langsung dengan output kegiatan (misal: konsumsi rapat/sosialisasi/seminar, spanduk, fotokopi materi kegiatan, dokumentasi).\n3. Akun 521811 digunakan untuk pengadaan barang pakai habis operasional (seperti ATK, kertas HVS, tinta printer) yang dicatat masuk ke dalam Aplikasi Persediaan (SAKTI Modul Persediaan).',
+        kode_terkait: '521111, 521211, 521811'
+      },
+      {
+        id: 'FAQ-02',
+        kategori: 'Belanja Modal',
+        tanya: 'Kapan pengadaan barang menggunakan akun Belanja Barang Ekstrakomptabel (521252 / 521253) dan kapan menggunakan Belanja Modal (532111 / 533111)?',
+        jawab: '• Jika pengadaan Peralatan & Mesin memiliki nilai per satuan di bawah batas minimum kapitalisasi (< Rp1.000.000), gunakan akun 521252 (Belanja Peralatan dan Mesin - Ekstrakomptabel) atau 525162 untuk BLU.\n• Jika nilai per satuan Peralatan & Mesin >= Rp1.000.000 dan masa manfaat > 12 bulan, gunakan akun 532111 (Belanja Modal Peralatan dan Mesin).\n• Untuk Gedung & Bangunan, batas kapitalisasinya adalah Rp25.000.000 (di bawah nilai tersebut gunakan akun 521253).',
+        kode_terkait: '521252, 521253, 532111, 533111'
+      },
+      {
+        id: 'FAQ-03',
+        kategori: 'Perjalanan Dinas',
+        tanya: 'Bagaimana membedakan penggunaan akun Perjalanan Dinas 524111, 524113, 524114, dan 524119?',
+        jawab: '• 524111 (Perjadin Biasa): Perjalanan dinas jabatan yang melewati batas kota (dan bukan paket meeting).\n• 524113 (Perjadin Dalam Kota): Perjalanan dinas pelaksanaan tugas di dalam batas kota.\n• 524114 (Paket Meeting Dalam Kota): Penyelenggaraan rapat/sosialisasi di luar kantor (hotel) di dalam kota dengan skema halfday/fullday/fullboard.\n• 524119 (Paket Meeting Luar Kota): Penyelenggaraan rapat paket meeting di luar batas kota satker penyelenggara.',
+        kode_terkait: '524111, 524113, 524114, 524119'
+      }
+    ];
+
+    let state = {
+      kasAccounts: [],
+      akrualAccounts: [],
+      faqs: [...FALLBACK_FAQS],
+      bookmarks: JSON.parse(localStorage.getItem('bas_mobile_bookmarks_v1') || '["521111", "521211", "521252", "524111", "532111"]'),
+      activeBasis: 'KAS',
+      activeScreen: 'akun',
+      selectedModalAccount: null,
+      isFullWidth: false
+    };
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      const bgClass = type === 'success' ? 'bg-slate-900 border-emerald-500' : 'bg-amber-900 border-amber-400';
+      const iconClass = type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-circle-info text-amber-300';
+      toast.className = `${bgClass} text-white px-4 py-3 rounded-xl shadow-xl border-l-4 flex items-center gap-2.5 text-xs sm:text-sm font-medium pointer-events-auto transition-all duration-300`;
+      toast.innerHTML = `<i class="fa-solid ${iconClass} text-base"></i><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function copyTextToClipboard(text, successMsg) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg || 'Berhasil disalin ke clipboard!');
+      } catch (err) {
+        showToast('Gagal menyalin teks', 'warning');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function toggleShellWidth() {
+      state.isFullWidth = !state.isFullWidth;
+      const shell = document.getElementById('appShell');
+      shell.className = state.isFullWidth ? 'app-shell-full transition-all duration-300' : 'app-shell-mobile transition-all duration-300';
+    }
+
+    function syncViewportHeight() {
+      const vh = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty('--app-height', `${vh}px`);
+    }
+    window.addEventListener('resize', syncViewportHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncViewportHeight);
+    }
+
+    function updateBookmarkBadge() {
+      const badge = document.getElementById('navBookmarkBadge');
+      if (state.bookmarks.length > 0) {
+        badge.textContent = state.bookmarks.length;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function buildMaster6DigitList() {
+      const kasMap = {};
+      const akrMap = {};
+      state.kasAccounts.forEach(a => { if (a.kode.length === 6) kasMap[a.kode] = a; });
+      state.akrualAccounts.forEach(a => { if (a.kode.length === 6) akrMap[a.kode] = a; });
+      const allCodes = Array.from(new Set([...Object.keys(kasMap), ...Object.keys(akrMap)])).sort();
+      return allCodes.map(kd => {
+        const k = kasMap[kd];
+        const a = akrMap[kd];
+        const primary = k || a;
+        return {
+          kode: kd,
+          uraian: k && a && k.uraian !== a.uraian ? `${k.uraian} / ${a.uraian}` : primary.uraian,
+          penjelasan: k ? k.penjelasan : a.penjelasan,
+          segmen: primary.segmen,
+          page: primary.page
+        };
+      });
+    }
+
+    function setBasisFilter(basis) {
+      state.activeBasis = basis;
+      ['KAS', 'AKRUAL', 'MASTER6'].forEach(b => {
+        const btn = document.getElementById(`basisBtn-${b}`);
+        if (b === basis) {
+          btn.className = 'py-1.5 px-2 rounded-lg text-xs font-bold bg-djpb-800 text-white shadow-xs transition';
+        } else {
+          btn.className = 'py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
+        }
+      });
+      const labels = {
+        'KAS': 'Lampiran I & II (Basis Kas)',
+        'AKRUAL': 'Lampiran III & IV (Basis Akrual)',
+        'MASTER6': 'Master Sandingan 6 Digit'
+      };
+      document.getElementById('activeBasisLabel').textContent = labels[basis];
+      renderAccountList();
+    }
+
+    function clearAccountSearch() {
+      document.getElementById('basSearchInput').value = '';
+      renderAccountList();
+    }
+
+    function renderAccountList() {
+      const query = (document.getElementById('basSearchInput').value || '').trim().toLowerCase();
+      const segFilter = document.getElementById('segmenFilterSelect').value;
+      const digFilter = document.getElementById('digitFilterSelect').value;
+
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (query.length > 0) clearBtn.classList.remove('hidden');
+      else clearBtn.classList.add('hidden');
+
+      let sourceList = [];
+      if (state.activeBasis === 'KAS') sourceList = state.kasAccounts;
+      else if (state.activeBasis === 'AKRUAL') sourceList = state.akrualAccounts;
+      else sourceList = buildMaster6DigitList();
+
+      const filtered = sourceList.filter(item => {
+        const isNonaktif = (item.uraian || '').includes('NONAKTIF') || (item.penjelasan || '').includes('DINONAKTIFKAN') || String(item.page || '').includes('Nonaktif');
+        const isKep291 = String(item.page || '').includes('KEP-291') || (item.penjelasan || '').includes('KEP-291');
+
+        if (segFilter === 'KEP291_UPD') {
+          if (!isKep291 || isNonaktif) return false;
+        } else if (segFilter === 'KEP291_NONAKTIF') {
+          if (!isNonaktif) return false;
+        } else if (segFilter === 'DIKTUM3') {
+          if (!['521252','521253','521254','525162','525163','525164','523125'].includes(item.kode)) return false;
+        } else if (segFilter !== 'ALL') {
+          if (!item.kode.startsWith(segFilter)) return false;
+        }
+        if (digFilter === '6' && item.kode.length !== 6) return false;
+        if (digFilter === 'INDUK' && item.kode.length === 6) return false;
+
+        if (query) {
+          const matchKode = item.kode.toLowerCase().includes(query);
+          const matchUraian = item.uraian.toLowerCase().includes(query);
+          const matchPenj = (item.penjelasan || '').toLowerCase().includes(query);
+          return matchKode || matchUraian || matchPenj;
+        }
+        return true;
+      });
+
+      document.getElementById('searchResultCountText').textContent = `Ditemukan ${filtered.length.toLocaleString('id-ID')} akun`;
+
+      const container = document.getElementById('accountListContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 my-4 space-y-2">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-xl">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <div class="font-bold text-slate-700 text-sm">Akun Tidak Ditemukan</div>
+            <p class="text-xs text-slate-500">Coba gunakan kata kunci lain atau ubah filter Segmen / Basis Akun.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const displaySlice = filtered.slice(0, 120);
+      container.innerHTML = displaySlice.map(item => {
+        const isBookmarked = state.bookmarks.includes(item.kode);
+        const isDetail = item.kode.length === 6;
+        const badgeColor = isDetail
+          ? (state.activeBasis === 'AKRUAL' ? 'bg-indigo-600 text-white' : 'bg-djpb-800 text-white')
+          : 'bg-slate-200 text-slate-800';
+
+        return `
+          <div class="bg-white hover:bg-blue-50/40 rounded-xl p-3 border ${isDetail ? 'border-slate-200' : 'border-slate-300 bg-slate-50/70'} shadow-2xs transition flex items-start justify-between gap-2.5 cursor-pointer" onclick="openAccountDetailModal('${item.kode}', '${state.activeBasis}')">
+            <div class="space-y-1 flex-1 min-w-0">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-md font-mono font-bold text-xs ${badgeColor}">${item.kode}</span>
+                <span class="text-[10px] font-medium text-slate-400">${item.kode.length} Digit</span>
+              </div>
+              <div class="font-bold text-xs sm:text-sm text-slate-800 leading-snug">${item.uraian}</div>
+              <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">${item.penjelasan || '-'}</p>
+            </div>
+            <button onclick="event.stopPropagation(); toggleBookmark('${item.kode}')" class="p-1.5 rounded-lg hover:bg-slate-100 text-sm transition" title="Bookmark Akun">
+              <i class="${isBookmarked ? 'fa-solid text-amber-500' : 'fa-regular text-slate-300'} fa-star"></i>
+            </button>
+          </div>
+        `;
+      }).join('') + (filtered.length > 120 ? `
+        <div class="text-center py-2.5 text-xs text-slate-500 font-medium">
+          Menampilkan 120 dari ${filtered.length.toLocaleString('id-ID')} akun. Ketik lebih spesifik untuk menyaring hasil.
+        </div>
+      ` : '');
+    }
+
+    function openAccountDetailModal(kode, basisContext) {
+      const kasItem = state.kasAccounts.find(a => a.kode === kode);
+      const akrItem = state.akrualAccounts.find(a => a.kode === kode);
+      const primary = (basisContext === 'AKRUAL' ? (akrItem || kasItem) : (kasItem || akrItem));
+      if (!primary) {
+        showToast('Memuat rincian akun ' + kode + '...', 'info');
+        return;
+      }
+
+      state.selectedModalAccount = { kode, basisContext, primary, kasItem, akrItem };
+
+      document.getElementById('detailKodeBadge').textContent = primary.kode;
+      document.getElementById('detailBasisBadge').textContent = basisContext === 'AKRUAL' ? 'Basis Akrual (Lamp III-IV)' : (basisContext === 'MASTER6' ? 'Master 6 Digit' : 'Basis Kas (Lamp I-II)');
+      document.getElementById('detailDigitBadge').textContent = `${primary.kode.length} Digit`;
+      document.getElementById('detailUraianTitle').textContent = primary.uraian;
+      document.getElementById('detailPenjelasanText').textContent = primary.penjelasan || 'Tidak ada penjelasan tambahan.';
+
+      const activePool = basisContext === 'AKRUAL' ? state.akrualAccounts : state.kasAccounts;
+      let hierHtml = '';
+      for (let len = 1; len <= kode.length; len++) {
+        const prefix = kode.substring(0, len);
+        const parentAcc = activePool.find(a => a.kode === prefix) || state.kasAccounts.find(a => a.kode === prefix) || state.akrualAccounts.find(a => a.kode === prefix);
+        if (parentAcc) {
+          const isCurrent = (len === kode.length);
+          hierHtml += `
+            <div class="flex items-start gap-2 ${isCurrent ? 'font-bold text-djpb-800' : 'text-slate-600'}" style="padding-left: ${(len - 1) * 8}px">
+              <span class="font-mono text-[11px] bg-white px-1.5 py-0.2 rounded border border-slate-200">${prefix}</span>
+              <span class="text-[11px]">${parentAcc.uraian}</span>
+            </div>
+          `;
+        }
+      }
+      document.getElementById('detailHierarchyList').innerHTML = hierHtml || `<div class="text-xs text-slate-500">${primary.kode} - ${primary.uraian}</div>`;
+
+      const sandinganBox = document.getElementById('detailSandinganBox');
+      const sandinganContent = document.getElementById('detailSandinganContent');
+      if (kasItem || akrItem) {
+        sandinganBox.classList.remove('hidden');
+        sandinganContent.innerHTML = `
+          <div class="bg-white p-2.5 rounded-lg border border-indigo-100">
+            <div class="text-[10px] font-bold text-djpb-800 uppercase">Basis Kas (LRA)</div>
+            <div class="font-semibold text-slate-800 mt-0.5">${kasItem ? kasItem.uraian : '<span class="text-slate-400 italic">Tidak ada</span>'}</div>
+          </div>
+          <div class="bg-white p-2.5 rounded-lg border border-indigo-100">
+            <div class="text-[10px] font-bold text-indigo-800 uppercase">Basis Akrual (LO)</div>
+            <div class="font-semibold text-slate-800 mt-0.5">${akrItem ? akrItem.uraian : '<span class="text-slate-400 italic">Tidak ada</span>'}</div>
+          </div>
+        `;
+      } else {
+        sandinganBox.classList.add('hidden');
+      }
+
+      updateModalBookmarkIcon();
+      document.getElementById('accountDetailModal').classList.remove('hidden');
+    }
+
+    function closeAccountDetailModal() {
+      document.getElementById('accountDetailModal').classList.add('hidden');
+    }
+
+    function updateModalBookmarkIcon() {
+      if (!state.selectedModalAccount) return;
+      const isBm = state.bookmarks.includes(state.selectedModalAccount.kode);
+      const btn = document.getElementById('detailBookmarkBtn');
+      btn.innerHTML = `<i class="${isBm ? 'fa-solid text-amber-400' : 'fa-regular text-white'} fa-star text-base"></i>`;
+    }
+
+    function toggleBookmark(kode) {
+      const idx = state.bookmarks.indexOf(kode);
+      if (idx >= 0) {
+        state.bookmarks.splice(idx, 1);
+        showToast(`Akun ${kode} dihapus dari Bookmark`, 'info');
+      } else {
+        state.bookmarks.push(kode);
+        showToast(`Akun ${kode} disimpan ke Bookmark!`);
+      }
+      localStorage.setItem('bas_mobile_bookmarks_v1', JSON.stringify(state.bookmarks));
+      updateBookmarkBadge();
+      renderAccountList();
+      renderBookmarkList();
+      updateModalBookmarkIcon();
+    }
+
+    function toggleBookmarkFromModal() {
+      if (!state.selectedModalAccount) return;
+      toggleBookmark(state.selectedModalAccount.kode);
+    }
+
+    function copyCurrentAccountDetail() {
+      if (!state.selectedModalAccount) return;
+      const { primary } = state.selectedModalAccount;
+      const text = `Kode Akun: ${primary.kode}\nUraian: ${primary.uraian}\nPenjelasan:\n${primary.penjelasan}`;
+      copyTextToClipboard(text, `Rincian akun ${primary.kode} berhasil disalin!`);
+    }
+
+    function shareCurrentAccountDetail() {
+      if (!state.selectedModalAccount) return;
+      const { primary } = state.selectedModalAccount;
+      const text = `*Referensi BAS Online*\n• *Kode Akun:* ${primary.kode}\n• *Uraian:* ${primary.uraian}\n• *Penjelasan:* ${primary.penjelasan}`;
+      if (navigator.share) {
+        navigator.share({ title: `Akun BAS ${primary.kode}`, text }).catch(() => {});
+      } else {
+        copyTextToClipboard(text, `Format WhatsApp disalin!`);
+      }
+    }
+
+    function renderBookmarkList() {
+      const container = document.getElementById('bookmarkListContainer');
+      if (state.bookmarks.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 my-4 space-y-2">
+            <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-400 flex items-center justify-center mx-auto text-xl">
+              <i class="fa-regular fa-star"></i>
+            </div>
+            <div class="font-bold text-slate-700 text-sm">Belum Ada Akun Di-bookmark</div>
+            <p class="text-xs text-slate-500">Tekan ikon bintang pada menu Daftar Akun untuk menyimpan akun pilihan.</p>
+          </div>
+        `;
+        return;
+      }
+
+      const items = state.bookmarks.map(kd => {
+        return state.kasAccounts.find(a => a.kode === kd) || state.akrualAccounts.find(a => a.kode === kd);
+      }).filter(Boolean);
+
+      container.innerHTML = items.map(item => `
+        <div class="bg-white hover:bg-amber-50/30 rounded-xl p-3.5 border border-slate-200 shadow-2xs flex items-start justify-between gap-3 cursor-pointer" onclick="openAccountDetailModal('${item.kode}', 'KAS')">
+          <div class="space-y-1 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-md font-mono font-bold text-xs bg-djpb-800 text-white">${item.kode}</span>
+            </div>
+            <div class="font-bold text-xs sm:text-sm text-slate-800">${item.uraian}</div>
+            <p class="text-[11px] text-slate-600 line-clamp-2">${item.penjelasan}</p>
+          </div>
+          <button onclick="event.stopPropagation(); toggleBookmark('${item.kode}')" class="p-1.5 text-amber-500 hover:text-red-500 transition" title="Hapus">
+            <i class="fa-solid fa-trash-can text-xs"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function exportBookmarksCSV() {
+      if (state.bookmarks.length === 0) {
+        showToast('Daftar bookmark masih kosong', 'warning');
+        return;
+      }
+      let csv = 'Kode Akun,Uraian Akun,Penjelasan\n';
+      state.bookmarks.forEach(kd => {
+        const item = state.kasAccounts.find(a => a.kode === kd) || state.akrualAccounts.find(a => a.kode === kd);
+        if (item) {
+          csv += `${item.kode},"${(item.uraian || '').replace(/"/g, '""')}","${(item.penjelasan || '').replace(/"/g, '""')}"\n`;
+        }
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Bookmark_BAS.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('CSV Bookmark diunduh!');
+    }
+
+    function populateFaqCategories() {
+      const select = document.getElementById('faqCategorySelect');
+      if (!select) return;
+      const currentVal = select.value || 'ALL';
+      const categories = Array.from(new Set(state.faqs.map(f => String(f.kategori || '').trim()).filter(Boolean)));
+      select.innerHTML = '<option value="ALL">Semua Topik</option>' +
+        categories.map(cat => `<option value="${cat.replace(/"/g, '&quot;')}">${cat}</option>`).join('');
+      select.value = categories.includes(currentVal) ? currentVal : 'ALL';
+    }
+
+    function renderFaqList() {
+      const q = (document.getElementById('faqSearchInput').value || '').trim().toLowerCase();
+      const cat = document.getElementById('faqCategorySelect').value;
+
+      const filtered = state.faqs.filter(f => {
+        const faqKat = String(f.kategori || '').trim();
+        const faqTanya = String(f.tanya || '');
+        const faqJawab = String(f.jawab || '');
+        const rawKode = f.kode_terkait || f.kodeTerkait || [];
+        const kodeList = Array.isArray(rawKode) ? rawKode : String(rawKode).split(',').map(s => s.trim()).filter(Boolean);
+        if (cat !== 'ALL' && faqKat !== cat) return false;
+        if (q) {
+          return faqTanya.toLowerCase().includes(q) || faqJawab.toLowerCase().includes(q) || kodeList.some(k => k.toLowerCase().includes(q));
+        }
+        return true;
+      });
+
+      const container = document.getElementById('faqListContainer');
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="bg-white rounded-xl p-6 text-center text-xs text-slate-500 border border-slate-200">Tidak ada topik FAQ yang cocok.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(f => {
+        const rawKode = f.kode_terkait || f.kodeTerkait || [];
+        const kodeList = Array.isArray(rawKode) ? rawKode : String(rawKode).split(',').map(s => s.trim()).filter(Boolean);
+        return `
+        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="px-2 py-0.5 rounded-md bg-blue-50 text-djpb-800 font-semibold text-[10px] border border-blue-200">${f.kategori}</span>
+            <div class="flex flex-wrap gap-1">
+              ${kodeList.map(kd => `<button onclick="openAccountDetailModal('${kd}', 'KAS')" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-djpb-800 hover:text-white font-mono text-[10px] font-bold text-slate-700 transition">${kd}</button>`).join('')}
+            </div>
+          </div>
+          <h4 class="font-bold text-xs sm:text-sm text-slate-900 leading-snug">${f.tanya}</h4>
+          <div class="text-xs text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 p-3 rounded-xl border border-slate-100">${f.jawab}</div>
+          <div class="flex items-center justify-end gap-2 pt-1">
+            <button onclick="copyFaqItem('${f.id}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-semibold flex items-center gap-1 transition">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+      `}).join('');
+    }
+
+    function copyFaqItem(id) {
+      const f = state.faqs.find(x => x.id === id);
+      if (!f) return;
+      copyTextToClipboard(`Pertanyaan: ${f.tanya}\n\nJawaban:\n${f.jawab}`, 'Jawaban FAQ disalin!');
+    }
+
+    function switchAppScreen(screenName) {
+      state.activeScreen = screenName;
+      ['akun', 'bookmark', 'faq', 'narasi'].forEach(s => {
+        const el = document.getElementById(`appScreen-${s}`);
+        const btn = document.getElementById(`navBtn-${s}`);
+        if (s === screenName) {
+          el.classList.remove('hidden');
+          btn.className = 'app-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-djpb-800 font-bold bg-blue-50/80 transition relative';
+        } else {
+          el.classList.add('hidden');
+          btn.className = 'app-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition relative';
+        }
+      });
+      if (screenName === 'bookmark') renderBookmarkList();
+      if (screenName === 'faq') {
+        populateFaqCategories();
+        renderFaqList();
+      }
+    }
+
+    // ==========================================
+    // FUNGSI INISIALISASI & AMBIL DATA SUPABASE (DENGAN AUTO-PAGINATION > 1.000 BARIS)
+    // ==========================================
+    async function fetchAllAccountsFromSupabase() {
+      let allRows = [];
+      let from = 0;
+      const step = 1000;
+      while (true) {
+        const { data, error } = await supabaseClient
+          .from('bas_accounts')
+          .select('kode,uraian,penjelasan,segmen,basis,page')
+          .order('id', { ascending: true })
+          .range(from, from + step - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allRows = allRows.concat(data);
+        if (data.length < step) break;
+        from += step;
+      }
+      return allRows;
+    }
+
+    async function loadSupabaseData() {
+      if (!supabaseClient || SUPABASE_URL.includes('YOUR_PROJECT_ID')) {
+        document.getElementById('searchResultCountText').textContent = 'Menunggu konfigurasi SUPABASE_URL & KEY...';
+        populateFaqCategories();
+        renderFaqList();
+        return;
+      }
+
+      try {
+        // Ambil seluruh baris Akun Kas & Akrual (melewati batas default 1.000 baris Supabase)
+        const accountsData = await fetchAllAccountsFromSupabase();
+
+        if (accountsData && accountsData.length > 0) {
+          state.kasAccounts = accountsData
+            .filter(a => a.basis === 'KAS' || a.basis === 'BOTH' || !a.basis)
+            .map(a => ({
+              kode: String(a.kode || '').trim(),
+              uraian: String(a.uraian || '').trim(),
+              penjelasan: String(a.penjelasan || '').trim(),
+              segmen: String(a.segmen || '').trim(),
+              page: String(a.page || '').trim()
+            }));
+          state.akrualAccounts = accountsData
+            .filter(a => a.basis === 'AKRUAL' || a.basis === 'BOTH')
+            .map(a => ({
+              kode: String(a.kode || '').trim(),
+              uraian: String(a.uraian || '').trim(),
+              penjelasan: String(a.penjelasan || '').trim(),
+              segmen: String(a.segmen || '').trim(),
+              page: String(a.page || '').trim()
+            }));
+          const totalLoaded = state.kasAccounts.length + state.akrualAccounts.length;
+          document.getElementById('dbCountBadge').textContent = totalLoaded.toLocaleString('id-ID') + ' Akun';
+        }
+
+        const { data: faqData, error: faqError } = await supabaseClient
+          .from('bas_faqs')
+          .select('*')
+          .order('id', { ascending: true });
+
+        if (!faqError && faqData && faqData.length > 0) {
+          state.faqs = faqData;
+        }
+
+        populateFaqCategories();
+        renderAccountList();
+        renderBookmarkList();
+        renderFaqList();
+
+      } catch (err) {
+        console.error("Gagal memuat dari Supabase:", err);
+        document.getElementById('searchResultCountText').textContent = 'Gagal terhubung ke database Supabase.';
+        showToast('Periksa URL, Anon Key, atau RLS Policy di Supabase Anda', 'warning');
+      }
+    }
+
+    window.onload = function() {
+      syncViewportHeight();
+      updateBookmarkBadge();
+      loadSupabaseData();
+    };
+  </script>
+</body>
+</html>
