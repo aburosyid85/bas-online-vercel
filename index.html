@@ -968,7 +968,14 @@
           btn.className = 'app-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition relative';
         }
       });
-      // ==========================================
+      if (screenName === 'bookmark') renderBookmarkList();
+      if (screenName === 'faq') {
+        populateFaqCategories();
+        renderFaqList();
+      }
+    }
+
+    // ==========================================
     // FUNGSI PIN AKSES & TAMBAH FAQ BARU (OTOMATISASI ID FAQ-XX)
     // ==========================================
     function generateNextFaqId() {
