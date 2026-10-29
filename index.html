@@ -118,6 +118,9 @@
           </div>
         </div>
         <div class="flex items-center gap-1.5">
+          <button onclick="openPinFaqModal()" title="Tambah Data Tanya Jawab (FAQ)" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+            <i class="fa-solid fa-plus text-xs"></i>
+          </button>
           <button onclick="toggleShellWidth()" id="layoutToggleBtn" title="Ubah Lebar Tampilan (HP / Lebar)" class="hidden sm:flex w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 items-center justify-center text-white transition">
             <i class="fa-solid fa-expand text-xs"></i>
           </button>
@@ -409,15 +412,103 @@
 
   </div>
 
+  <!-- =============================================================== -->
+  <!-- MODAL 1: VALIDASI PIN AKSES ADMIN FAQ                           -->
+  <!-- =============================================================== -->
+  <div id="pinFaqModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-djpb-900 text-white px-5 py-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-lock text-gold-400"></i>
+          <span>Validasi PIN Akses</span>
+        </h3>
+        <button onclick="closePinFaqModal()" class="text-slate-300 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form onsubmit="handleVerifyPinFaq(event)" class="p-5 space-y-4 text-xs sm:text-sm">
+        <div class="text-center space-y-1">
+          <p class="text-xs text-slate-600">Masukkan PIN Admin untuk merekam data Tanya Jawab (FAQ) baru.</p>
+        </div>
+        <div>
+          <input
+            type="password"
+            id="faqPinInput"
+            required
+            inputmode="numeric"
+            placeholder="••••••"
+            class="w-full text-center tracking-[0.4em] font-mono font-bold text-lg border border-slate-300 rounded-xl px-3 py-2.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-djpb-500 focus:bg-white"
+          />
+          <p id="pinErrorMsg" class="hidden text-[11px] text-red-600 font-semibold text-center mt-1.5">
+            <i class="fa-solid fa-circle-exclamation"></i> PIN yang Anda masukkan salah!
+          </p>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" onclick="closePinFaqModal()" class="flex-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">Batal</button>
+          <button type="submit" class="flex-1 py-2 rounded-xl bg-djpb-800 hover:bg-djpb-900 text-white font-semibold shadow">Lanjut</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- =============================================================== -->
+  <!-- MODAL 2: FORM TAMBAH TANYA JAWAB (FAQ) BARU KE SUPABASE         -->
+  <!-- =============================================================== -->
+  <div id="addFaqModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-djpb-900 text-white px-5 py-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm sm:text-base flex items-center gap-2">
+          <i class="fa-solid fa-circle-plus text-gold-400"></i>
+          <span>Rekam Tanya Jawab (FAQ) Baru</span>
+        </h3>
+        <button onclick="closeAddFaqModal()" class="text-slate-300 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form onsubmit="handleAddFaqSubmit(event)" class="p-5 space-y-3.5 text-xs sm:text-sm max-h-[85vh] overflow-y-auto">
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">ID Otomatis</label>
+            <input type="text" id="newFaqId" readonly class="w-full border border-slate-200 rounded-xl px-3 py-2 font-mono font-bold text-djpb-800 bg-slate-100 cursor-not-allowed" />
+          </div>
+          <div class="col-span-2">
+            <label class="block font-semibold text-slate-700 mb-1">Kategori Topik</label>
+            <input type="text" id="newFaqKategori" list="faqKategoriList" required placeholder="Pilih / ketik kategori..." class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-djpb-500" />
+            <datalist id="faqKategoriList"></datalist>
+          </div>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Pertanyaan / Permasalahan</label>
+          <textarea id="newFaqTanya" rows="2" required placeholder="Tulis pertanyaan atau studi kasus BAS..." class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-djpb-500"></textarea>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Jawaban / Solusi Akun</label>
+          <textarea id="newFaqJawab" rows="4" required placeholder="Tulis penjelasan dan solusi kode akunnya..." class="w-full border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-djpb-500"></textarea>
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Kode Akun Terkait <span class="text-[11px] font-normal text-slate-400">(Pisahkan dengan koma)</span></label>
+          <input type="text" id="newFaqKode" placeholder="Contoh: 521111, 521211, 521811" class="w-full border border-slate-300 rounded-xl px-3 py-2 font-mono focus:outline-none focus:ring-2 focus:ring-djpb-500" />
+        </div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeAddFaqModal()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold">Batal</button>
+          <button type="submit" id="saveFaqBtn" class="px-4 py-2 rounded-xl bg-djpb-800 hover:bg-djpb-900 text-white font-semibold shadow flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Simpan FAQ</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- TOAST CONTAINER -->
   <div id="toastContainer" class="fixed bottom-16 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
   <script>
     // ==========================================
     // KONFIGURASI SUPABASE (Ganti dengan kredensial Anda)
     // ==========================================
     const SUPABASE_URL = 'https://iwaztnioxolvkjjmgjml.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml3YXp0bmlveG9sdmtqam1nam1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxOTEyNjksImV4cCI6MjEwODc2NzI2OX0.I77yCR8RUBKgUHy4ESky8HezyLby6v26PH0U3YPIJvA';
+    const ADMIN_PIN_FAQ = '123456'; // Ubah PIN Akses Admin sesuai keinginan Anda
     
     const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
@@ -877,11 +968,88 @@
           btn.className = 'app-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 hover:text-slate-600 font-medium transition relative';
         }
       });
-      if (screenName === 'bookmark') renderBookmarkList();
-      if (screenName === 'faq') {
-        populateFaqCategories();
-        renderFaqList();
+      // ==========================================
+    // FUNGSI PIN AKSES & TAMBAH FAQ BARU (OTOMATISASI ID FAQ-XX)
+    // ==========================================
+    function generateNextFaqId() {
+      let maxNum = 0;
+      state.faqs.forEach(f => {
+        const match = String(f.id || '').match(/FAQ-(\d+)/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      });
+      const nextNum = maxNum + 1;
+      return 'FAQ-' + String(nextNum).padStart(2, '0');
+    }
+
+    function openPinFaqModal() {
+      document.getElementById('faqPinInput').value = '';
+      document.getElementById('pinErrorMsg').classList.add('hidden');
+      document.getElementById('pinFaqModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('faqPinInput').focus(), 100);
+    }
+
+    function closePinFaqModal() {
+      document.getElementById('pinFaqModal').classList.add('hidden');
+    }
+
+    function handleVerifyPinFaq(e) {
+      e.preventDefault();
+      const inputPin = document.getElementById('faqPinInput').value.trim();
+      if (inputPin === ADMIN_PIN_FAQ) {
+        closePinFaqModal();
+        openAddFaqModal();
+      } else {
+        document.getElementById('pinErrorMsg').classList.remove('hidden');
+        document.getElementById('faqPinInput').value = '';
+        document.getElementById('faqPinInput').focus();
       }
+    }
+
+    function openAddFaqModal() {
+      document.getElementById('newFaqId').value = generateNextFaqId();
+      const categories = Array.from(new Set(state.faqs.map(f => String(f.kategori || '').trim()).filter(Boolean)));
+      document.getElementById('faqKategoriList').innerHTML = categories.map(c => `<option value="${c.replace(/"/g, '&quot;')}">`).join('');
+      document.getElementById('addFaqModal').classList.remove('hidden');
+    }
+
+    function closeAddFaqModal() {
+      document.getElementById('addFaqModal').classList.add('hidden');
+    }
+
+    async function handleAddFaqSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('newFaqId').value.trim();
+      const kategori = document.getElementById('newFaqKategori').value.trim();
+      const tanya = document.getElementById('newFaqTanya').value.trim();
+      const jawab = document.getElementById('newFaqJawab').value.trim();
+      const kode_terkait = document.getElementById('newFaqKode').value.trim();
+      const btn = document.getElementById('saveFaqBtn');
+
+      const newFaqObj = { id, kategori, tanya, jawab, kode_terkait };
+
+      if (supabaseClient && !SUPABASE_URL.includes('YOUR_PROJECT_ID')) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Menyimpan...</span>';
+        const { error } = await supabaseClient.from('bas_faqs').insert([newFaqObj]);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>Simpan FAQ</span>';
+
+        if (error) {
+          showToast('Gagal menyimpan ke Supabase: ' + error.message, 'warning');
+          return;
+        }
+      }
+
+      state.faqs.push(newFaqObj);
+      populateFaqCategories();
+      renderFaqList();
+      closeAddFaqModal();
+      e.target.reset();
+      switchAppScreen('faq');
+      showToast(`Data ${id} berhasil ditambahkan!`);
     }
 
     // ==========================================
