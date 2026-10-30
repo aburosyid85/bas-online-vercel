@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>BAS Online - Your Account Standard, Simplified</title>
   <!-- Favicon & App Icon -->
+  <meta name="theme-color" content="#0f2342" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="BAS Online" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f59e0b'/%3E%3Cpath fill='%230f2342' d='M32 10L12 22v4h40v-4L32 10zm-14 20v16h6V30h-6zm11 0v16h6V30h-6zm11 0v16h6V30h-6zM12 50v4h40v-4H12z'/%3E%3C/svg%3E" />
   <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f59e0b'/%3E%3Cpath fill='%230f2342' d='M32 10L12 22v4h40v-4L32 10zm-14 20v16h6V30h-6zm11 0v16h6V30h-6zm11 0v16h6V30h-6zM12 50v4h40v-4H12z'/%3E%3C/svg%3E" />
   <!-- Tailwind CSS -->
@@ -327,6 +332,33 @@
           <li><strong>Aset Tetap Lainnya (Hewan, Ikan, Tanaman):</strong> Gunakan <code class="font-mono font-bold text-djpb-800">521254</code> (Reguler) atau <code class="font-mono font-bold text-djpb-800">525164</code> (BLU).</li>
         </ul>
       </div>
+    </div>
+
+    <!-- =============================================================== -->
+    <!-- POP-UP BANNER INSTALL APLIKASI DI SMARTPHONE (PWA / HOME SCREEN)-->
+    <!-- =============================================================== -->
+    <div id="pwaInstallBanner" class="hidden absolute bottom-16 left-3 right-3 bg-gradient-to-r from-djpb-900 via-djpb-800 to-blue-900 text-white p-3.5 rounded-2xl shadow-2xl border border-white/15 z-30 transition-all duration-300">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-gold-500 flex items-center justify-center text-djpb-900 font-black shadow shrink-0">
+            <i class="fa-solid fa-mobile-screen-button text-lg"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-xs sm:text-sm text-white leading-tight">Install Aplikasi BAS Online</div>
+            <p id="pwaBannerDesc" class="text-[11px] text-blue-200 leading-snug mt-0.5">Pasang pintasan di layar utama HP agar akses lebih cepat & layar penuh.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="triggerPwaInstall()" id="pwaInstallBtn" class="px-3 py-1.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-slate-950 font-extrabold text-xs shadow transition">
+            Install
+          </button>
+          <button onclick="dismissPwaBanner()" title="Tutup" class="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center text-blue-200 hover:text-white transition">
+            <i class="fa-solid fa-xmark text-xs"></i>
+          </button>
+        </div>
+      </div>
+      <!-- Panduan Tambahan Khusus Pengguna iPhone/iOS atau Manual Browser -->
+      <div id="pwaManualGuide" class="hidden mt-2.5 pt-2.5 border-t border-white/15 text-[11px] text-blue-100 leading-relaxed"></div>
     </div>
 
     <!-- =============================================================== -->
@@ -1457,9 +1489,96 @@
       }
     }
 
+    // ==========================================
+    // FITUR POP-UP INSTALL SHORTCUT DI SMARTPHONE (PWA / HOME SCREEN)
+    // ==========================================
+    let deferredInstallPrompt = null;
+
+    function initPwaInstallFeature() {
+      // 1. Suntikkan Web App Manifest secara dinamis agar browser mengenali sebagai PWA
+      const iconSvgUrl = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23f59e0b'/%3E%3Cpath fill='%230f2342' d='M256 80L96 176v32h320v-32L256 80zm-112 160v128h48V240h-48zm88 0v128h48V240h-48zm88 0v128h48V240h-48zM96 400v32h320v-32H96z'/%3E%3C/svg%3E";
+      const manifestObj = {
+        name: "BAS Online - KPPN Luwuk",
+        short_name: "BAS Online",
+        description: "Aplikasi Pencarian Bagan Akun Standar (BAS) DJPb Kemenkeu",
+        start_url: window.location.href,
+        display: "standalone",
+        background_color: "#0f2342",
+        theme_color: "#0f2342",
+        icons: [
+          { src: iconSvgUrl, sizes: "192x192", type: "image/svg+xml", purpose: "any maskable" },
+          { src: iconSvgUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+        ]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/json' });
+      const manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.href = URL.createObjectURL(manifestBlob);
+      document.head.appendChild(manifestLink);
+
+      // 2. Cek apakah sudah di-install (mode standalone) atau sudah pernah ditutup hari ini
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const isDismissed = sessionStorage.getItem('bas_pwa_banner_dismissed') === '1';
+      if (isStandalone || isDismissed) return;
+
+      // 3. Tangkap event native install prompt (Chrome / Edge / Android)
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        showPwaBanner();
+      });
+
+      // 4. Jika dibuka di Smartphone (Android/iOS), tampilkan pop-up otomatis saat awal dibuka
+      const ua = navigator.userAgent || '';
+      const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(ua);
+      if (isMobileDevice) {
+        setTimeout(() => {
+          showPwaBanner();
+        }, 1500);
+      }
+    }
+
+    function showPwaBanner() {
+      const isDismissed = sessionStorage.getItem('bas_pwa_banner_dismissed') === '1';
+      if (isDismissed) return;
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.remove('hidden');
+    }
+
+    function dismissPwaBanner() {
+      sessionStorage.setItem('bas_pwa_banner_dismissed', '1');
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    async function triggerPwaInstall() {
+      // Jika browser mendukung native install prompt (Android Chrome)
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        const { outcome } = await deferredInstallPrompt.userChoice;
+        if (outcome === 'accepted') {
+          dismissPwaBanner();
+          showToast('Pintasan BAS Online berhasil dipasang di HP Anda!');
+        }
+        deferredInstallPrompt = null;
+        return;
+      }
+
+      // Jika di iOS (Safari) atau browser yang butuh klik menu manual
+      const guideBox = document.getElementById('pwaManualGuide');
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      guideBox.classList.remove('hidden');
+      if (isIOS) {
+        guideBox.innerHTML = `<i class="fa-brands fa-apple mr-1 text-gold-400"></i> <strong>Cara Pasang di iPhone/iPad:</strong> Ketuk ikon <strong>Bagikan (Share <i class="fa-solid fa-arrow-up-from-bracket"></i>)</strong> di bar bawah Safari, lalu pilih <strong>"Tambah ke Layar Utama" (Add to Home Screen)</strong>.`;
+      } else {
+        guideBox.innerHTML = `<i class="fa-brands fa-android mr-1 text-emerald-400"></i> <strong>Cara Pasang di HP Android:</strong> Ketuk ikon <strong>Menu (⋮)</strong> di pojok kanan atas browser, lalu pilih <strong>"Tambahkan ke Layar Utama" (Add to Home screen / Install App)</strong>.`;
+      }
+    }
+
     window.onload = function() {
       syncViewportHeight();
       updateBookmarkBadge();
+      initPwaInstallFeature();
       loadSupabaseData();
     };
   </script>
