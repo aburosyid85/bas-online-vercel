@@ -603,117 +603,278 @@
     }
 
     // ==========================================
-    // PEMETAAN AKUN BERPASANGAN KAS <-> AKRUAL (PMK 212/PMK.05/2019 & PMK 232/PMK.05/2022)
+    // PEMETAAN KOMPREHENSIF AKUN BERPASANGAN (PMK 212/PMK.05/2019 & PMK 232/PMK.05/2022)
     // ==========================================
+    const DIRECT_ACCOUNT_PAIRS = [
+      {
+        kategori: 'Akuntansi Hibah Langsung Bentuk Uang (PMK 99/PMK.05/2017 & PMK 232/PMK.05/2022)',
+        codes: ['111827', '218211', '111822', '391131'],
+        keterangan: 'Saat menerima kas hibah langsung yang belum disahkan (belum SP2HL), dicatat Debet Kas Lainnya di K/L dari Hibah yang Belum Disahkan (111827) dan Kredit Hibah Langsung yang Belum Disahkan (218211). Saat disahkan dengan SP2HL, direklasifikasi dari 111827/218211 menjadi Kas Lainnya di K/L dari Hibah (111822) dan Pengesahan Hibah Langsung (391131) / Pendapatan Hibah (431xxx).'
+      },
+      {
+        kategori: 'Siklus Uang Persediaan / UP (Kas Bendahara ↔ Kewajiban ↔ Transitoris)',
+        codes: ['111611', '219511', '825111', '815111', '111514', '219942'],
+        keterangan: 'Pencairan SP2D UP (825111) menambah Kas di Bendahara Pengeluaran (111611) dan Utang Uang Muka dari KPPN (219511). Pertanggungjawaban GUP Nihil menggunakan Kas dalam Transito UP (111514), sedangkan setoran sisa UP (815111 / 219942) mengurangi 111611 dan 219511.'
+      },
+      {
+        kategori: 'Siklus Tambahan Uang Persediaan / TUP (Kas Bendahara ↔ Kewajiban ↔ Transitoris)',
+        codes: ['111613', '219511', '825511', '815511', '111513', '219943'],
+        keterangan: 'Pencairan SP2D TUP (825511) menambah Kas di Bendahara Pengeluaran TUP (111613) dan Uang Muka dari KPPN (219511). Pertanggungjawaban GTUP Nihil menggunakan Kas dalam Transito TUP (111513), dan setoran sisa TUP menggunakan akun 815511 / 219943.'
+      },
+      {
+        kategori: 'Akuntansi Kas di Bendahara Penerimaan (PNBP Belum Disetor)',
+        codes: ['111711', '219611', '115211'],
+        keterangan: 'Penerimaan PNBP yang dipungut Bendahara Penerimaan namun belum disetor ke Kas Negara dicatat Debet Kas di Bendahara Penerimaan (111711) dan Kredit Pendapatan yang Ditangguhkan (219611).'
+      },
+      {
+        kategori: 'Akuntansi Kas Lainnya di Bendahara Pengeluaran (Pajak & Dana Pihak Ketiga)',
+        codes: ['111821', '219961', '219962'],
+        keterangan: 'Kas di Bendahara Pengeluaran yang bukan berasal dari UP/TUP (111821) berpasangan dengan Utang Pajak Bendahara Pengeluaran yang Belum Disetor (219961) dan/atau Utang Perwalian Bendahara yang Belum Disampaikan kepada yang Berhak (219962, misal uang honor/LS yang belum diserahkan).'
+      },
+      {
+        kategori: 'Akuntansi Kas Lainnya di Bendahara Penerimaan (Dana Pihak Ketiga & Pajak)',
+        codes: ['111825', '212192', '219963', '219211', '219212'],
+        keterangan: 'Kas Lainnya di Bendahara Penerimaan (111825) berpasangan dengan Dana Pihak Ketiga (212192), Utang Pajak Bendahara Penerimaan yang Belum Disetor (219963), atau Pendapatan Diterima di Muka (219211/219212).'
+      },
+      {
+        kategori: 'Akuntansi Kas Lainnya di BLU (Dana Titipan, Pajak & Pendapatan Diterima di Muka BLU)',
+        codes: ['111826', '212193', '219964', '219214'],
+        keterangan: 'Saldo Kas Lainnya di BLU (111826) berpasangan dengan Dana Pihak Ketiga BLU (212193), Utang Pajak Bendahara BLU yang Belum Disetor (219964), atau Pendapatan Diterima di Muka BLU (219214).'
+      },
+      {
+        kategori: 'Akuntansi Kas dan Bank BLU & Pengesahan SP3B/SP2B BLU',
+        codes: ['111911', '111914', '111515', '311311', '311321'],
+        keterangan: 'Kas dan Bank BLU Belum Disahkan (111914) direklasifikasi menjadi Kas dan Bank BLU (111911) saat pengesahan SP2B BLU melalui akun Kas dalam Transito BLU (111515) dan mempengaruhi SAL/SILPA BLU (311311/311321).'
+      },
+      {
+        kategori: 'Akuntansi Kas Besi Perwakilan RI di Luar Negeri',
+        codes: ['111824', '163211', '166321', '166322'],
+        keterangan: 'Reklasifikasi Kas Besi di Perwakilan RI di Luar Negeri (163211) menjadi Kas Lainnya dari Reklasifikasi Kas Besi (111824) atau Aset Lainnya Reklasifikasi Kas Besi (166321/166322).'
+      },
+      {
+        kategori: 'Akuntansi BAST & Utang yang Belum Diterima Tagihannya (Akrual BAST)',
+        codes: ['218111', '117911', '131211', '132211', '133211', '134211', '139111', '166411'],
+        keterangan: 'Saat BAST barang/aset diterima namun belum terbit SPP/SPM, dicatat Debet Persediaan/Aset Belum Diregister (117911 / 13x211 / 139111 / 166411) dan Kredit Utang yang Belum Diterima Tagihannya (218111).'
+      },
+      {
+        kategori: 'Akuntansi Konstruksi Dalam Pengerjaan (KDP)',
+        codes: ['136111', '136211', '139111', '133111', '134111', '533111', '534111'],
+        keterangan: 'Pembangunan fisik lintas waktu atau bertahap dari Belanja Modal (533xxx/534xxx) dicatat sebagai Konstruksi Dalam Pengerjaan / KDP (136111 / 136211) sebelum direklasifikasi menjadi Aset Tetap definitif (133111/134111).'
+      },
+      {
+        kategori: 'Akuntansi Aset Konsesi Jasa (KEP-291/PB/2022 & PSAP 16)',
+        codes: ['138111', '138121', '138131', '138211', '138221', '591511', '591521', '226111', '226112', '226113', '491315'],
+        keterangan: 'Pengakuan Aset Konsesi Jasa Partisipasi Pemerintah/Mitra (138111/138121/138131) berpasangan dengan Kewajiban Konsesi Jasa (226111–226113), Akumulasi Penyusutan Aset Konsesi Jasa (138211/138221), dan Beban Penyusutan Aset Konsesi Jasa (591511/591521).'
+      },
+      {
+        kategori: 'Akuntansi Properti Investasi (KEP-291/PB/2022 & PSAP 17)',
+        codes: ['138311', '138312', '138313', '138411', '591611'],
+        keterangan: 'Properti Investasi Tanah/Gedung/Dalam Pengerjaan (138311–138313) berpasangan dengan Akumulasi Penyusutan Properti Investasi (138411) dan Beban Penyusutan Properti Investasi (591611).'
+      },
+      {
+        kategori: 'Akuntansi Konsesi Jasa Aset Tak Berwujud (KEP-291/PB/2022)',
+        codes: ['162511', '162521', '162531', '169511', '169521', '592131', '592141'],
+        keterangan: 'Aset Konsesi Jasa-ATB (162511–162531) berpasangan dengan Akumulasi Amortisasi Aset Konsesi Jasa-ATB (169511/169521) dan Beban Amortisasi Aset Konsesi Jasa-ATB (592131/592141).'
+      },
+      {
+        kategori: 'Siklus Akuntansi Tagihan Penjualan Angsuran (TPA)',
+        codes: ['151111', '115311', '156111', '116311', '594911', '594311', '425123'],
+        keterangan: 'Piutang TPA Jangka Panjang (151111) berpasangan dengan Bagian Lancar TPA (115311), Penyisihan Piutang Tidak Tertagih TPA (156111 & 116311), Beban Penyisihan TPA (594911 & 594311), serta Pendapatan Sewa Beli Rumah Negara (425123).'
+      },
+      {
+        kategori: 'Siklus Akuntansi Tuntutan Perbendaharaan / Tuntutan Ganti Rugi (TP/TGR)',
+        codes: ['152111', '115411', '115421', '156311', '116411', '116421', '594931', '594411', '425791', '425792', '425793'],
+        keterangan: 'Piutang TP/TGR Jangka Panjang (152111) berpasangan dengan Bagian Lancar TP/TGR (115411/115421), Penyisihan Piutang TP/TGR (156311/116411/116421), Beban Penyisihan (594931/594411), dan pelunasannya disetor ke Pendapatan Penyelesaian TP/TGR (425791–425793).'
+      },
+      {
+        kategori: 'Siklus Akuntansi Aset Tetap / ATB yang Dihentikan dari Penggunaan Aktif (Aset Lain-lain)',
+        codes: ['166112', '166113', '169122', '169318', '592222', '592118', '596111'],
+        keterangan: 'BMN rusak berat/usang direklasifikasi ke Aset Tetap/ATB yang Tidak Digunakan dalam Operasi Pemerintahan (166112/166113) beserta akumulasi penyusutannya (169122/169318), dan saat dihapuskan dicatat pada Beban Pelepasan Aset (596111).'
+      }
+    ];
+
     function getPairedAccountInfo(kode) {
       if (!kode || kode.length !== 6) return null;
 
-      // 1. Belanja Modal (53xxxx) -> Aset Tetap / ATB (13xxxx / 16xxxx) & Penyusutan (591xxx)
-      if (kode.startsWith('5311') || kode === '537111') {
-        return { kategori: 'Jurnal Korolari Belanja Modal Tanah (PMK 212/PMK.05/2019)', pairs: ['131111', '131211'], keterangan: 'Realisasi Belanja Modal Tanah (LRA) membentuk Aset Tetap Tanah (131111) di Neraca melalui akun Tanah Belum Diregister (131211).' };
-      }
-      if (kode.startsWith('5321') || kode === '537112' || kode === '537122') {
-        return { kategori: 'Jurnal Korolari Belanja Modal Peralatan & Mesin (PMK 212/PMK.05/2019)', pairs: ['132111', '132211', '137111', '591111'], keterangan: 'Realisasi Belanja Modal P&M (LRA) membentuk Aset Tetap Peralatan dan Mesin (132111) melalui P&M Belum Diregister (132211), serta disusutkan secara berkala dengan Beban Penyusutan P&M (591111) dan Akumulasi Penyusutan P&M (137111).' };
-      }
-      if (kode.startsWith('5331') || kode === '537113' || kode === '537123') {
-        return { kategori: 'Jurnal Korolari Belanja Modal Gedung & Bangunan (PMK 212/PMK.05/2019)', pairs: ['133111', '133211', '137211', '591211'], keterangan: 'Realisasi Belanja Modal G&B (LRA) membentuk Aset Tetap Gedung dan Bangunan (133111) melalui G&B Belum Diregister (133211), serta disusutkan dengan Beban Penyusutan G&B (591211) dan Akumulasi Penyusutan G&B (137211).' };
-      }
-      if (kode.startsWith('53411') || kode === '534141' || kode === '537114') {
-        return { kategori: 'Jurnal Korolari Belanja Modal Jalan & Jembatan (PMK 212/PMK.05/2019)', pairs: ['134111', '134211', '137311', '591311'], keterangan: 'Realisasi Belanja Modal Jalan & Jembatan (LRA) membentuk Aset Tetap Jalan dan Jembatan (134111) melalui akun Belum Diregister (134211).' };
-      }
-      if (kode.startsWith('53412') || kode === '534151') {
-        return { kategori: 'Jurnal Korolari Belanja Modal Irigasi (PMK 212/PMK.05/2019)', pairs: ['134112', '134212', '137312', '591312'], keterangan: 'Realisasi Belanja Modal Irigasi (LRA) membentuk Aset Tetap Irigasi (134112) melalui Irigasi Belum Diregister (134212).' };
-      }
-      if (kode.startsWith('53413') || kode === '534161') {
-        return { kategori: 'Jurnal Korolari Belanja Modal Jaringan (PMK 212/PMK.05/2019)', pairs: ['134113', '134213', '137313', '591313'], keterangan: 'Realisasi Belanja Modal Jaringan (LRA) membentuk Aset Tetap Jaringan (134113) melalui Jaringan Belum Diregister (134213).' };
-      }
-      if (kode.startsWith('5361') || kode === '537115' || kode === '537125') {
-        return { kategori: 'Jurnal Korolari Belanja Modal Lainnya / ATB (PMK 212/PMK.05/2019)', pairs: ['135121', '135111', '162151', '591411', '592115'], keterangan: 'Realisasi Belanja Modal Lainnya (LRA) membentuk Aset Tetap Lainnya (135121), Aset Tetap Renovasi (135111), atau Aset Tak Berwujud Software/Lisensi (162151/162161).' };
-      }
-
-      // 2. Kebalikannya: Aset Tetap (13xxxx) -> Belanja Modal (53xxxx) & Penyusutan (591xxx)
-      if (kode === '131111' || kode === '131211') {
-        return { kategori: 'Pasangan Perolehan Aset Tetap Tanah', pairs: ['531111', '531112', '537111'], keterangan: 'Aset Tetap Tanah diperoleh melalui realisasi akun Belanja Modal Tanah (531111 s.d. 531121 atau 537111 untuk BLU) pada LRA.' };
-      }
-      if (kode === '132111' || kode === '132211' || kode === '137111' || kode === '591111') {
-        return { kategori: 'Pasangan Perolehan & Penyusutan Peralatan dan Mesin', pairs: ['532111', '532121', '132111', '137111', '591111'].filter(k => k !== kode), keterangan: 'Diperoleh dari Belanja Modal Peralatan dan Mesin (532111 / 532121), dicatat pada Aset Tetap P&M (132111), dan disusutkan ke Beban Penyusutan (591111) & Akumulasi Penyusutan (137111).' };
-      }
-      if (kode === '133111' || kode === '133211' || kode === '137211' || kode === '591211') {
-        return { kategori: 'Pasangan Perolehan & Penyusutan Gedung dan Bangunan', pairs: ['533111', '533121', '133111', '137211', '591211'].filter(k => k !== kode), keterangan: 'Diperoleh dari Belanja Modal Gedung dan Bangunan (533111 / 533121), dicatat pada Aset Tetap G&B (133111), dan disusutkan ke Beban Penyusutan (591211) & Akumulasi Penyusutan (137211).' };
-      }
-      if (['134111', '134211', '137311', '591311'].includes(kode)) {
-        return { kategori: 'Pasangan Perolehan & Penyusutan Jalan dan Jembatan', pairs: ['534111', '534141', '134111', '137311', '591311'].filter(k => k !== kode), keterangan: 'Diperoleh dari Belanja Modal Jalan dan Jembatan (534111 / 534141) dan dicatat pada Aset Tetap Jalan dan Jembatan (134111).' };
-      }
-      if (['134112', '134212', '137312', '591312'].includes(kode)) {
-        return { kategori: 'Pasangan Perolehan & Penyusutan Irigasi', pairs: ['534121', '534151', '134112', '137312', '591312'].filter(k => k !== kode), keterangan: 'Diperoleh dari Belanja Modal Irigasi (534121 / 534151) dan dicatat pada Aset Tetap Irigasi (134112).' };
-      }
-      if (['134113', '134213', '137313', '591313'].includes(kode)) {
-        return { kategori: 'Pasangan Perolehan & Penyusutan Jaringan', pairs: ['534131', '534161', '134113', '137313', '591313'].filter(k => k !== kode), keterangan: 'Diperoleh dari Belanja Modal Jaringan (534131 / 534161) dan dicatat pada Aset Tetap Jaringan (134113).' };
-      }
-      if (['135121', '135111', '162151', '591411', '592115'].includes(kode)) {
-        return { kategori: 'Pasangan Perolehan Aset Tetap Lainnya / Software ATB', pairs: ['536111', '536121', '135121', '162151'].filter(k => k !== kode), keterangan: 'Diperoleh dari realisasi Belanja Modal Lainnya (536111 / 536121).' };
-      }
-
-      // 3. Belanja Barang Persediaan (5218xx & 5231x2/3/5) <-> Persediaan (117xxx) & Beban Persediaan (593xxx)
-      const persediaanMap = {
-        '521811': { aset: '117111', beban: '593111', nama: 'Persediaan Barang Konsumsi' },
-        '521812': { aset: '117112', beban: '593112', nama: 'Persediaan Amunisi' },
-        '521813': { aset: '117121', beban: '593121', nama: 'Persediaan Pita Cukai, Materai & Leges' },
-        '521821': { aset: '117131', beban: '593131', nama: 'Persediaan Bahan Baku' },
-        '521822': { aset: '117132', beban: '593132', nama: 'Persediaan Barang Dalam Proses' },
-        '521831': { aset: '117191', beban: '593141', nama: 'Persediaan Tujuan Strategis/Berjaga-jaga' },
-        '521832': { aset: '117199', beban: '593149', nama: 'Persediaan Lainnya' },
-        '523112': { aset: '117113', beban: '593113', nama: 'Persediaan Pemeliharaan Gedung & Bangunan' },
-        '523123': { aset: '117113', beban: '593113', nama: 'Persediaan Pemeliharaan Peralatan & Mesin' },
-        '523125': { aset: '117113', beban: '593113', nama: 'Persediaan BMP & Pelumas Khusus' },
-        '526111': { aset: '117122', beban: '593122', nama: 'Persediaan Tanah/Bangunan Diserahkan ke Masyarakat' },
-        '526112': { aset: '117124', beban: '593124', nama: 'Persediaan Peralatan & Mesin Diserahkan ke Masyarakat' },
-        '526113': { aset: '117122', beban: '593122', nama: 'Persediaan Gedung & Bangunan Diserahkan ke Masyarakat' },
-        '526114': { aset: '117125', beban: '593125', nama: 'Persediaan JIJ Diserahkan ke Masyarakat' },
-        '526115': { aset: '117126', beban: '593126', nama: 'Persediaan Aset Tetap Lainnya Diserahkan ke Masyarakat' },
-        '526311': { aset: '117128', beban: '593128', nama: 'Persediaan Bantuan Lainnya Diserahkan ke Masyarakat' }
-      };
-      if (persediaanMap[kode]) {
-        const m = persediaanMap[kode];
-        return {
-          kategori: `Siklus Akuntansi ${m.nama} (Pendekatan Aset - PMK 232/PMK.05/2022)`,
-          pairs: [m.aset, m.beban, '117911'],
-          keterangan: `Saat pembelian dicatat dengan Belanja (${kode}) di LRA dan menambah Aset ${m.nama} (${m.aset}) di Neraca (melalui Persediaan Belum Diregister 117911). Saat dipakai/diserahkan, diakui sebagai Beban (${m.beban}) di LO.`
-        };
-      }
-      for (const [belanjaKd, m] of Object.entries(persediaanMap)) {
-        if (m.aset === kode || m.beban === kode) {
+      // 0. Cek pada daftar grup relasi langsung (Kas, Hibah, Bendahara, KDP, Konsesi, TPA, TGR, dll.)
+      for (const group of DIRECT_ACCOUNT_PAIRS) {
+        if (group.codes.includes(kode)) {
           return {
-            kategori: `Siklus Akuntansi ${m.nama} (Kas ↔ Neraca ↔ LO)`,
-            pairs: [belanjaKd, m.aset, m.beban].filter(k => k !== kode),
-            keterangan: `Berpasangan dengan Belanja Kas (${belanjaKd} di LRA), Aset Persediaan (${m.aset} di Neraca), dan Beban Persediaan (${m.beban} di LO).`
+            kategori: group.kategori,
+            pairs: group.codes.filter(k => k !== kode),
+            keterangan: group.keterangan
           };
         }
       }
 
-      // 4. Belanja Barang Ekstrakomptabel (52125x) <-> Beban Ekstrakomptabel
-      if (['521252', '521253', '521254', '525162', '525163', '525164'].includes(kode)) {
-        const modalRef = (kode.endsWith('2')) ? '532111' : (kode.endsWith('3') ? '533111' : '536111');
+      // 1. Belanja Modal (53xxxx) <-> Aset Tetap / ATB (13xxxx / 16xxxx) & Penyusutan (591xxx)
+      if (kode.startsWith('5311') || kode === '537111' || kode === '131111' || kode === '131211') {
+        const list = ['531111', '531112', '537111', '131111', '131211', '218111'];
         return {
-          kategori: 'Batas Kapitalisasi BMN (Ekstrakomptabel vs Belanja Modal)',
-          pairs: [modalRef],
-          keterangan: `Digunakan untuk pengadaan di bawah nilai batas minimum kapitalisasi (Pendekatan Beban). Jika memenuhi nilai kapitalisasi, gunakan Belanja Modal (${modalRef}).`
+          kategori: 'Jurnal Korolari Belanja Modal & Aset Tetap Tanah (PMK 212/PMK.05/2019)',
+          pairs: list.filter(k => k !== kode),
+          keterangan: 'Realisasi Belanja Modal Tanah (531111–531121 / 537111 di LRA) membentuk Aset Tetap Tanah (131111) di Neraca melalui akun Tanah Belum Diregister (131211).'
+        };
+      }
+      if (kode.startsWith('5321') || ['537112', '537122', '132111', '132211', '137111', '591111'].includes(kode)) {
+        const list = ['532111', '532121', '132111', '132211', '137111', '591111'];
+        return {
+          kategori: 'Jurnal Korolari Belanja Modal & Penyusutan Peralatan dan Mesin (PMK 212/PMK.05/2019)',
+          pairs: list.filter(k => k !== kode),
+          keterangan: 'Realisasi Belanja Modal P&M (532111–532121 di LRA) membentuk Aset Tetap Peralatan dan Mesin (132111) melalui P&M Belum Diregister (132211), serta disusutkan secara berkala ke Beban Penyusutan P&M (591111) dan Akumulasi Penyusutan P&M (137111).'
+        };
+      }
+      if (kode.startsWith('5331') || ['537113', '537123', '133111', '133211', '137211', '591211'].includes(kode)) {
+        const list = ['533111', '533121', '133111', '133211', '137211', '591211'];
+        return {
+          kategori: 'Jurnal Korolari Belanja Modal & Penyusutan Gedung dan Bangunan (PMK 212/PMK.05/2019)',
+          pairs: list.filter(k => k !== kode),
+          keterangan: 'Realisasi Belanja Modal G&B (533111–533121 di LRA) membentuk Aset Tetap Gedung dan Bangunan (133111) melalui G&B Belum Diregister (133211), serta disusutkan ke Beban Penyusutan G&B (591211) dan Akumulasi Penyusutan G&B (137211).'
+        };
+      }
+      if (kode.startsWith('53411') || ['534141', '537114', '134111', '134211', '137311', '591311'].includes(kode)) {
+        const list = ['534111', '534141', '134111', '134211', '137311', '591311'];
+        return {
+          kategori: 'Jurnal Korolari Belanja Modal & Penyusutan Jalan dan Jembatan (PMK 212/PMK.05/2019)',
+          pairs: list.filter(k => k !== kode),
+          keterangan: 'Realisasi Belanja Modal Jalan & Jembatan (534111/534141 di LRA) membentuk Aset Tetap Jalan dan Jembatan (134111) melalui akun Belum Diregister (134211) dan disusutkan ke 591311 & 137311.'
+        };
+      }
+      if (kode.startsWith('53412') || ['534151', '134112', '134212', '137312', '591312'].includes(kode)) {
+        const list = ['534121', '534151', '134112', '134212', '137312', '591312'];
+        return {
+          kategori: 'Jurnal Korolari Belanja Modal & Penyusutan Irigasi (PMK 212/PMK.05/2019)',
+          pairs: list.filter(k => k !== kode),
+          keterangan: 'Realisasi Belanja Modal Irigasi (534121/534151 di LRA) membentuk Aset Tetap Irigasi (134112) melalui Irigasi Belum Diregister (134212) dan disusutkan ke 591312 & 137312.'
+        };
+      }
+      if (kode.startsWith('53413') || ['534161', '134113', '134213', '137313', '591313'].includes(kode)) {
+        const list = ['534131', '534161', '134113', '134213', '137313', '591313'];
+        return {
+          kategori: 'Jurnal Korolari Belanja Modal & Penyusutan Jaringan (PMK 212/PMK.05/2019)',
+          pairs: list.filter(k => k !== kode),
+          keterangan: 'Realisasi Belanja Modal Jaringan (534131/534161 di LRA) membentuk Aset Tetap Jaringan (134113) melalui Jaringan Belum Diregister (134213) dan disusutkan ke 591313 & 137313.'
+        };
+      }
+      if (kode.startsWith('5361') || ['537115', '537125', '135121', '135111', '137411', '591411'].includes(kode)) {
+        const list = ['536111', '536121', '135121', '135111', '162151', '137411', '591411'];
+        return {
+          kategori: 'Jurnal Korolari Belanja Modal Lainnya / Aset Tetap Lainnya / ATB',
+          pairs: list.filter(k => k !== kode),
+          keterangan: 'Realisasi Belanja Modal Lainnya (536111–536121) membentuk Aset Tetap Lainnya (135121), Aset Tetap Renovasi (135111), atau Aset Tak Berwujud Software/Lisensi (162151/162161).'
         };
       }
 
-      // 5. Transitoris UP / TUP (825111, 815111, 825511, 815511) <-> Kas di Bendahara Pengeluaran (111611, 111613)
-      if (['825111', '815111', '111611'].includes(kode)) {
+      // 2. Aset Tak Berwujud (162xxx) <-> Akumulasi Amortisasi (1693xx) & Beban Amortisasi (5921xx)
+      const atbMap = [
+        { aset: '162111', akum: '169311', beban: '592111', modal: '536111', nama: 'Goodwill' },
+        { aset: '162121', akum: '169312', beban: '592112', modal: '536111', nama: 'Hak Cipta' },
+        { aset: '162131', akum: '169313', beban: '592113', modal: '536111', nama: 'Royalti' },
+        { aset: '162141', akum: '169314', beban: '592114', modal: '536111', nama: 'Paten' },
+        { aset: '162151', akum: '169315', beban: '592115', modal: '536111', nama: 'Software' },
+        { aset: '162161', akum: '169316', beban: '592116', modal: '536111', nama: 'Lisensi' },
+        { aset: '162191', akum: '169317', beban: '592117', modal: '536111', nama: 'Aset Tak Berwujud Lainnya' },
+        { aset: '162211', akum: '169411', beban: '592121', modal: '537115', nama: 'Software BLU' }
+      ];
+      for (const m of atbMap) {
+        if ([m.aset, m.akum, m.beban].includes(kode)) {
+          return {
+            kategori: `Siklus Akuntansi & Amortisasi Aset Tak Berwujud (${m.nama})`,
+            pairs: [m.modal, m.aset, m.akum, m.beban].filter(k => k !== kode),
+            keterangan: `Perolehan ${m.nama} dari Belanja Modal (${m.modal}) dicatat pada Aset Tak Berwujud (${m.aset}), serta diamortisasi secara berkala pada Beban Amortisasi (${m.beban}) dan Akumulasi Amortisasi (${m.akum}).`
+          };
+        }
+      }
+
+      // 3. Belanja Barang Persediaan (5218xx, 5231xx, 52512x, 526xxx) <-> Aset Persediaan (117xxx) & Beban Persediaan (593xxx)
+      const persediaanGroups = [
+        { codes: ['521811', '521841', '117111', '593111', '117911'], nama: 'Persediaan Barang Konsumsi' },
+        { codes: ['521812', '117112', '593112', '117911'], nama: 'Persediaan Amunisi' },
+        { codes: ['521813', '117121', '593121', '117911'], nama: 'Persediaan Pita Cukai, Materai & Leges' },
+        { codes: ['521821', '117131', '593131', '117911'], nama: 'Persediaan Bahan Baku' },
+        { codes: ['521822', '117132', '593132', '117911'], nama: 'Persediaan Barang Dalam Proses' },
+        { codes: ['521831', '117191', '593141', '117911'], nama: 'Persediaan Tujuan Strategis/Berjaga-jaga' },
+        { codes: ['521832', '117199', '593149', '117911'], nama: 'Persediaan Lainnya' },
+        { codes: ['117113', '593113', '523112', '523123', '523125', '523134', '523135', '523136', '523191'], nama: 'Persediaan Bahan untuk Pemeliharaan & BMP' },
+        { codes: ['117114', '593114', '523123'], nama: 'Persediaan Suku Cadang' },
+        { codes: ['117122', '593122', '526111', '526113', '526223'], nama: 'Persediaan Tanah/Gedung untuk Diserahkan ke Masyarakat/Pemda' },
+        { codes: ['117124', '593124', '526112', '526132', '526222'], nama: 'Persediaan Peralatan & Mesin untuk Diserahkan ke Masyarakat/Pemda' },
+        { codes: ['117125', '593125', '526114', '526224'], nama: 'Persediaan Jalan, Irigasi & Jaringan untuk Diserahkan ke Masyarakat/Pemda' },
+        { codes: ['117126', '593126', '526115'], nama: 'Persediaan Aset Tetap Lainnya untuk Diserahkan ke Masyarakat' },
+        { codes: ['117128', '593128', '526311', '526322', '521234', '526211', '526212'], nama: 'Persediaan Barang Bantuan Lainnya untuk Diserahkan ke Masyarakat' },
+        { codes: ['117141', '571112', '572112', '573112', '574112', '575112', '576112', '571115', '572115', '573115', '574115', '575115', '576115'], nama: 'Persediaan dalam Rangka Bantuan Sosial (Pendekatan Aset)' },
+        { codes: ['525121', '525122', '525123', '525125', '525129', '117211', '117212', '117219', '593211', '593212', '593215'], nama: 'Persediaan Badan Layanan Umum (BLU)' }
+      ];
+      for (const pg of persediaanGroups) {
+        if (pg.codes.includes(kode)) {
+          return {
+            kategori: `Siklus Akuntansi ${pg.nama} (Pendekatan Aset - PMK 232/PMK.05/2022)`,
+            pairs: pg.codes.filter(k => k !== kode),
+            keterangan: `Pembelian barang dengan pendekatan aset dicatat sebagai Belanja (52xxxx/57xxxx) di LRA dan membentuk Aset Persediaan (117xxx) di Neraca. Saat barang digunakan atau diserahkan dengan BAST kepada penerima, diakui sebagai Beban Persediaan/Bansos (593xxx/57xxxx) di LO.`
+          };
+        }
+      }
+
+      // 4. Belanja Barang Ekstrakomptabel (52125x / 52516x) <-> Beban Ekstrakomptabel & Pembanding Belanja Modal
+      if (['521252', '521253', '521254', '525162', '525163', '525164'].includes(kode)) {
+        const modalRef = kode.endsWith('2') ? '532111' : (kode.endsWith('3') ? '533111' : '536111');
+        const asetRef = kode.endsWith('2') ? '132111' : (kode.endsWith('3') ? '133111' : '135121');
         return {
-          kategori: 'Pasangan Transitoris Uang Persediaan (UP)',
-          pairs: ['825111', '815111', '111611', '219511'].filter(k => k !== kode),
-          keterangan: 'Pencairan UP (825111) dan Pengembalian UP (815111) berpasangan dengan akun Neraca Kas di Bendahara Pengeluaran (111611) dan Uang Muka dari KPPN (219511).'
+          kategori: 'Batas Kapitalisasi BMN (Ekstrakomptabel vs Belanja Modal)',
+          pairs: [modalRef, asetRef],
+          keterangan: `Digunakan untuk pengadaan BMN di bawah nilai batas minimum kapitalisasi (Pendekatan Beban). Jika memenuhi nilai kapitalisasi, gunakan Belanja Modal (${modalRef}) yang akan membentuk Aset Tetap (${asetRef}).`
         };
       }
-      if (['825511', '815511', '111613'].includes(kode)) {
+
+      // 5. Piutang Jangka Pendek (115xxx) <-> Penyisihan Piutang (116xxx) & Beban Penyisihan Piutang (594xxx)
+      if (kode.startsWith('1151') || kode.startsWith('1161') || kode.startsWith('5941')) {
         return {
-          kategori: 'Pasangan Transitoris Tambahan Uang Persediaan (TUP)',
-          pairs: ['825511', '815511', '111613', '219511'].filter(k => k !== kode),
-          keterangan: 'Pencairan TUP (825511) dan Pengembalian TUP (815511) berpasangan dengan akun Neraca Kas di Bendahara Pengeluaran TUP (111613) dan Uang Muka dari KPPN (219511).'
+          kategori: 'Siklus Akuntansi Piutang Perpajakan & Penyisihan Piutang Tidak Tertagih',
+          pairs: ['115121', '115131', '116112', '116113', '594112', '594113'].filter(k => k !== kode),
+          keterangan: 'Piutang Perpajakan (1151xx) di Neraca dinilai sebesar nilai bersih yang dapat direalisasikan dengan membentuk kontra-akun Penyisihan Piutang Tidak Tertagih Perpajakan (1161xx) dan Beban Penyisihan Piutang (5941xx) di LO.'
+        };
+      }
+      if (['115211', '115212', '116211', '116212', '594211', '594212', '114311'].includes(kode)) {
+        return {
+          kategori: 'Siklus Akuntansi Piutang PNBP & Penyisihan Piutang Tidak Tertagih',
+          pairs: ['115211', '116211', '594211', '114311'].filter(k => k !== kode),
+          keterangan: 'Piutang PNBP (115211) berpasangan dengan Penyisihan Piutang Tidak Tertagih PNBP (116211) di Neraca dan Beban Penyisihan Piutang PNBP (594211) di LO.'
+        };
+      }
+      if (kode.startsWith('1157') || kode.startsWith('1158') || kode.startsWith('1166') || kode.startsWith('1167') || kode.startsWith('5946') || kode.startsWith('5947')) {
+        return {
+          kategori: 'Siklus Akuntansi Piutang Operasional/Non-Operasional BLU & Penyisihannya',
+          pairs: ['115711', '115712', '116611', '116612', '594611', '594612'].filter(k => k !== kode),
+          keterangan: 'Piutang BLU (1157xx/1158xx) berpasangan dengan Penyisihan Piutang Tidak Tertagih BLU (1166xx/1167xx) di Neraca dan Beban Penyisihan Piutang BLU (5946xx/5947xx) di LO.'
+        };
+      }
+
+      // 6. Belanja Dibayar di Muka (1141xx), Uang Muka Belanja (1142xx), & Belanja yang Masih Harus Dibayar (21211x)
+      const akrualBelanjaPairs = [
+        { codes: ['114111', '114211', '212111', '511111'], nama: 'Belanja / Beban Pegawai (51)' },
+        { codes: ['114112', '114212', '212112', '521111', '522141'], nama: 'Belanja / Beban Barang dan Jasa (52)' },
+        { codes: ['114115', '114213', '212113', '532111', '533111'], nama: 'Belanja Modal (53)' },
+        { codes: ['114113', '114214', '212116', '541111'], nama: 'Belanja / Beban Pembayaran Kewajiban Utang (54)' },
+        { codes: ['114117', '114215', '214211', '551111'], nama: 'Belanja / Beban Subsidi (55)' },
+        { codes: ['114116', '114216', '212114', '561111'], nama: 'Belanja / Beban Hibah (56)' },
+        { codes: ['114118', '114217', '212115', '571111'], nama: 'Belanja / Beban Bantuan Sosial (57)' }
+      ];
+      for (const ab of akrualBelanjaPairs) {
+        if (ab.codes.slice(0, 3).includes(kode)) {
+          return {
+            kategori: `Penyesuaian Akrual Neraca atas ${ab.nama} (PMK 212/PMK.05/2019)`,
+            pairs: ab.codes.filter(k => k !== kode),
+            keterangan: `Akun Neraca Akrual untuk mencatat Belanja Dibayar di Muka (prepaid), Uang Muka Belanja (prepayment), atau Belanja yang Masih Harus Dibayar (utang tagihan pihak ketiga) yang berpasangan dengan kelompok ${ab.nama}.`
+          };
+        }
+      }
+
+      // 7. Utang PFK (211xxx) <-> Penerimaan PFK (811xxx) & Pengeluaran PFK (821xxx)
+      if (kode.startsWith('2111') || kode.startsWith('811') || kode.startsWith('821')) {
+        return {
+          kategori: 'Siklus Akuntansi Perhitungan Fihak Ketiga / PFK (Neraca ↔ Transitoris)',
+          pairs: ['211111', '211114', '211152', '811131', '811132', '821131', '821132'].filter(k => k !== kode),
+          keterangan: 'Potongan PFK (Iuran Jaminan Kesehatan, Taspen/Asabri 8%, Tapera, Beras Bulog) dicatat sebagai Penerimaan Non-Anggaran PFK (811xxx), membentuk kewajiban Utang PFK (211xxx) di Neraca, dan disalurkan kepada pihak ketiga melalui Pengeluaran Non-Anggaran PFK (821xxx).'
         };
       }
 
